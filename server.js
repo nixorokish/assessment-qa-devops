@@ -7,12 +7,24 @@ const {shuffleArray} = require('./utils')
 app.use(express.json())
 app.use(express.static('public'))
 
+// include and initialize the rollbar library with your access token
+var Rollbar = require("rollbar");
+var rollbar = new Rollbar({
+  accessToken: 'daf71c931c654c00bda671b0db87e553',
+  captureUncaught: true,
+  captureUnhandledRejections: true
+});
+
+// record a generic message and send it to Rollbar
+rollbar.log("Hello world!");
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public/index.html'))
 })
 
 app.get('/api/robots', (req, res) => {
     try {
+        rollbar.log('Someone requested the bots')
         res.status(200).send(botsArr)
     } catch (error) {
         console.log('ERROR GETTING BOTS', error)
@@ -25,15 +37,18 @@ app.get('/api/robots/five', (req, res) => {
         let shuffled = shuffleArray(bots)
         let choices = shuffled.slice(0, 5)
         let compDuo = shuffled.slice(6, 8)
+        rollbar.log('Someone requested five bots')
         res.status(200).send({choices, compDuo})
     } catch (error) {
         console.log('ERROR GETTING FIVE BOTS', error)
+        rollbar.error('Cant get five bots')
         res.sendStatus(400)
     }
 })
 
 app.post('/api/duel', (req, res) => {
     try {
+        rollbar.log('Someone is dueling')
         // getting the duos from the front end
         let {compDuo, playerDuo} = req.body
 
@@ -57,17 +72,21 @@ app.post('/api/duel', (req, res) => {
             playerRecord.losses++
             res.status(200).send('You won!')
         }
+        rollbar.log('Losses have been incremented')
     } catch (error) {
         console.log('ERROR DUELING', error)
+        rollbar.error('Error dueling')
         res.sendStatus(400)
     }
 })
 
 app.get('/api/player', (req, res) => {
     try {
+        rollbar.log('Someone requested player record')
         res.status(200).send(playerRecord)
     } catch (error) {
         console.log('ERROR GETTING PLAYER STATS', error)
+        rollbar.error('Cant get player stats')
         res.sendStatus(400)
     }
 })
